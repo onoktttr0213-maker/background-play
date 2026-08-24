@@ -1,0 +1,7 @@
+<resources>
+    <string name="app_name">Dual Web Player</string>
+    <string name="notification_channel_name">再生中の通知</string>
+    <string name="notification_channel_description">YouTube / Spotify バックグラウンド再生用の通知</string>
+    <string name="notification_title">バックグラウンド再生中</string>
+    <string name="notification_text">YouTube と Spotify を再生しています</string>
+</resources>
