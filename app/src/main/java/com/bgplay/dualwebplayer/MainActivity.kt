@@ -2,9 +2,11 @@ package com.bgplay.dualwebplayer
 
 import android.Manifest
 import android.content.Intent
+import android.content.pm.ApplicationInfo
 import android.content.pm.PackageManager
 import android.os.Build
 import android.os.Bundle
+import android.webkit.ConsoleMessage
 import android.webkit.WebChromeClient
 import android.webkit.WebSettings
 import android.webkit.WebView
@@ -12,6 +14,7 @@ import android.webkit.WebViewClient
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
+import androidx.core.view.WindowCompat
 
 /**
  * Hosts two independent WebViews (YouTube on top, Spotify on the bottom) so
@@ -32,7 +35,15 @@ class MainActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        // Opt back out of API 35's enforced edge-to-edge layout: with it on,
+        // content draws behind the status/nav bars and the 50/50 WebView
+        // split (layout_weight) measures against the wrong height.
+        WindowCompat.setDecorFitsSystemWindows(window, true)
         setContentView(R.layout.activity_main)
+
+        if (applicationInfo.flags and ApplicationInfo.FLAG_DEBUGGABLE != 0) {
+            WebView.setWebContentsDebuggingEnabled(true)
+        }
 
         youTubeWebView = findViewById(R.id.webViewYouTube)
         spotifyWebView = findViewById(R.id.webViewSpotify)
@@ -60,7 +71,12 @@ class MainActivity : AppCompatActivity() {
         settings.userAgentString = userAgent
 
         webView.webViewClient = WebViewClient()
-        webView.webChromeClient = WebChromeClient()
+        webView.webChromeClient = object : WebChromeClient() {
+            override fun onConsoleMessage(message: ConsoleMessage): Boolean {
+                android.util.Log.d("DualWebPlayer/JS", "${message.message()} (${message.sourceId()}:${message.lineNumber()})")
+                return true
+            }
+        }
     }
 
     private fun requestNotificationPermissionIfNeeded() {
