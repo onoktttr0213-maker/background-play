@@ -18,16 +18,16 @@ import com.logicpunch.core.GameConfig
 import com.logicpunch.core.PlayerId
 
 @Composable
-fun GameOverScreen(winner: PlayerId, onRestart: () -> Unit) {
+fun GameOverScreen(winner: PlayerId, vsCpu: Boolean = false, onRestart: () -> Unit) {
     val loser = if (winner == PlayerId.PLAYER_ONE) PlayerId.PLAYER_TWO else PlayerId.PLAYER_ONE
     Column(
         modifier = Modifier.fillMaxSize().padding(24.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center,
     ) {
-        Text("🏆 ${playerLabel(winner)} の勝利！", fontSize = 26.sp, textAlign = TextAlign.Center)
+        Text("🏆 ${seatLabel(winner, vsCpu)} の勝利！", fontSize = 26.sp, textAlign = TextAlign.Center)
         Text(
-            "${playerLabel(loser)} はライフを ${GameConfig.LIFE_COUNT} 枚すべて失いました。",
+            "${seatLabel(loser, vsCpu)} はライフを ${GameConfig.LIFE_COUNT} 枚すべて失いました。",
             fontSize = 13.sp,
             textAlign = TextAlign.Center,
             color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.7f),

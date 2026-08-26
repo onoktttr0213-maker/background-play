@@ -482,6 +482,7 @@
       log: [],
       lastRecoveryDraw: 0,
       lastNormalDraw: 0,
+      cpuPassiveStreak: 0,
     };
     log('ゲーム開始。先攻: ' + playerLabel(firstPlayer));
   }
@@ -653,14 +654,119 @@
   }
 
   // ============================================================
+  // CPU (simple heuristic AI, always plays as P2). Only ever looks at
+  // publicly visible board state and its own hand — never peeks at the
+  // human's hand — so it plays fair within the same information the
+  // human has.
+  // ============================================================
+  var CPU_ID = 'P2';
+
+  function cpuCardValue(c) { return c.attack + c.defense + c.combo; }
+
+  function cpuChooseBench(pid) {
+    var p = game.players[pid];
+    var weakestFirst = p.hand.slice().sort(function (a, b) { return cpuCardValue(a) - cpuCardValue(b); });
+    var ids = weakestFirst.slice(0, CONFIG.BENCH_SIZE).map(function (c) { return c.id; });
+    placeInitialBench(pid, ids);
+  }
+
+  function cpuRunMainPhase(pid) {
+    var p = game.players[pid];
+    while (p.field.length < CONFIG.MAX_ATTACKS_PER_TURN && p.bench.length > 0) {
+      var strongest = p.bench.slice().sort(function (a, b) { return b.attack - a.attack; })[0];
+      moveBenchToField(strongest.id);
+    }
+    while (p.bench.length < CONFIG.BENCH_SIZE && p.hand.length > 0) {
+      var weakest = p.hand.slice().sort(function (a, b) { return cpuCardValue(a) - cpuCardValue(b); })[0];
+      moveHandToBench(weakest.id);
+    }
+    endMainPhase();
+  }
+
+  /** attackerCard で targetCard を攻略するのに必要な最小のコンボ（0～3枚）。勝てなければ null。 */
+  function cpuAttackFeasibility(attackerCard, targetCard, availableHand) {
+    var attrBonus = hasAttributeAdvantage(attackerCard.attribute, targetCard.attribute) ? CONFIG.ATTRIBUTE_ADVANTAGE_BONUS : 0;
+    var base = attackerCard.attack + attrBonus;
+    if (base > targetCard.defense) return { comboIds: [], margin: base - targetCard.defense };
+    var sorted = availableHand.slice().sort(function (a, b) { return b.combo - a.combo; });
+    var total = base;
+    var used = [];
+    for (var i = 0; i < Math.min(CONFIG.COMBO_MAX_CARDS_FROM_HAND, sorted.length); i++) {
+      total += sorted[i].combo;
+      used.push(sorted[i].id);
+      if (total > targetCard.defense) return { comboIds: used, margin: total - targetCard.defense };
+    }
+    return null;
+  }
+
+  /** 今ターンでまだ使っていない自分の場カードの中から、最も効率よく勝てる攻撃を1つ選ぶ。無ければ null。 */
+  function cpuPickNextAttack(pid) {
+    var p = game.players[pid];
+    var o = game.players[opponentOf(pid)];
+    var targets = o.bench.concat(o.field);
+    var attackers = p.field.filter(function (c) { return !game.attackedFieldCardIdsThisTurn[c.id]; });
+    var best = null;
+    attackers.forEach(function (atk) {
+      targets.forEach(function (tgt) {
+        var feas = cpuAttackFeasibility(atk, tgt, p.hand);
+        if (!feas) return;
+        var candidate = { attackerId: atk.id, targetId: tgt.id, comboIds: feas.comboIds, comboCount: feas.comboIds.length, targetValue: tgt.defense };
+        if (!best || candidate.comboCount < best.comboCount ||
+          (candidate.comboCount === best.comboCount && candidate.targetValue > best.targetValue)) {
+          best = candidate;
+        }
+      });
+    });
+    return best;
+  }
+
+  /**
+   * 勝てる攻撃が無い状態が続いたときの手詰まり回避用フォールバック。
+   * 勝てなくても一番負け幅の小さい攻撃を選ぶ（コンボは使わず、盤面を動かすためだけの捨て身の一手）。
+   */
+  function cpuWorstCaseFallback(pid) {
+    var p = game.players[pid];
+    var o = game.players[opponentOf(pid)];
+    var targets = o.bench.concat(o.field);
+    var attackers = p.field.filter(function (c) { return !game.attackedFieldCardIdsThisTurn[c.id]; });
+    var best = null;
+    attackers.forEach(function (atk) {
+      targets.forEach(function (tgt) {
+        var attrBonus = hasAttributeAdvantage(atk.attribute, tgt.attribute) ? CONFIG.ATTRIBUTE_ADVANTAGE_BONUS : 0;
+        var margin = (atk.attack + attrBonus) - tgt.defense;
+        var candidate = { attackerId: atk.id, targetId: tgt.id, comboIds: [], margin: margin };
+        if (!best || candidate.margin > best.margin) best = candidate;
+      });
+    });
+    return best;
+  }
+
+  /** 相手の攻撃に対し、なるべく少ないコンボでブロックを狙う。無理なら何も使わない（手札を無駄にしない）。 */
+  function cpuChooseDefenseCombo(attackerCard, targetCard, attackerComboCards, hand) {
+    var attrBonus = hasAttributeAdvantage(attackerCard.attribute, targetCard.attribute) ? CONFIG.ATTRIBUTE_ADVANTAGE_BONUS : 0;
+    var attackTotal = attackerCard.attack + attrBonus + attackerComboCards.reduce(function (s, c) { return s + c.combo; }, 0);
+    if (targetCard.defense >= attackTotal) return [];
+    var sorted = hand.slice().sort(function (a, b) { return b.combo - a.combo; });
+    var total = targetCard.defense;
+    var used = [];
+    for (var i = 0; i < Math.min(CONFIG.COMBO_MAX_CARDS_FROM_HAND, sorted.length); i++) {
+      total += sorted[i].combo;
+      used.push(sorted[i].id);
+      if (total >= attackTotal) return used;
+    }
+    return [];
+  }
+
+  // ============================================================
   // UI helpers
   // ============================================================
   function esc(s) {
     return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
   }
   function playerLabel(pid) { return pid === 'P1' ? 'プレイヤー1' : 'プレイヤー2'; }
+  function seatLabel(pid) { return (ui.vsCpu && pid === CPU_ID) ? 'CPU' : playerLabel(pid); }
 
-  var ui = { screen: 'title', benchSel: [], battle: null, benchSelPlayer: null };
+  var ui = { screen: 'title', vsCpu: false, benchSel: [], battle: null, benchSelPlayer: null };
 
   function cardHtml(c, opts) {
     opts = opts || {};
@@ -739,8 +845,11 @@
     return (
       '<div class="title-screen">' +
       '<div class="logo">正論<span class="punch">パンチ</span>（仮）</div>' +
-      '<div class="tagline">日常の小言バトル。5つのテーマ40枚のカードで、相手を正論で追い詰めろ。2人で1台のスマホを交互に渡して遊ぶローカル対戦です。</div>' +
-      '<button class="btn btn-accent" data-action="start" style="font-size:1.1rem;padding:0.8em 1.6em;">たいせん開始</button>' +
+      '<div class="tagline">日常の小言バトル。5つのテーマ40枚のカードで、相手を正論で追い詰めろ。2人で1台のスマホを交互に渡すローカル対戦と、1人でも遊べるCPU対戦があります。</div>' +
+      '<div style="display:flex;flex-direction:column;gap:0.6rem;width:100%;max-width:320px;">' +
+      '<button class="btn btn-accent" data-action="startCpu" style="font-size:1.1rem;padding:0.8em 1.6em;">CPU対戦（1人でテストプレイ）</button>' +
+      '<button class="btn" data-action="start" style="font-size:1rem;padding:0.7em 1.6em;">2人対戦（パス&amp;プレイ）</button>' +
+      '</div>' +
       '<div class="rules-box">' +
       '<b>ルール要約</b><br>' +
       '・共通山札40枚 / ライフ4枚（裏向き）を奪い合う2人対戦。<br>' +
@@ -759,11 +868,11 @@
     return (
       '<div class="pass-screen">' +
       '<div class="pass-card">' +
-      '<div class="pass-badge ' + pid.toLowerCase() + '">' + playerLabel(pid) + '</div>' +
+      '<div class="pass-badge ' + pid.toLowerCase() + '">' + seatLabel(pid) + '</div>' +
       '<div class="pass-msg">' + esc(ui.pass.message) + '</div>' +
       '<button class="btn btn-accent btn-block" data-action="passReveal">タップして画面を見る</button>' +
       '</div>' +
-      '<div class="pass-warn">' + (pid === 'P1' ? playerLabel('P2') : playerLabel('P1')) + ' は画面を見ないでください</div>' +
+      '<div class="pass-warn">' + (pid === 'P1' ? seatLabel('P2') : seatLabel('P1')) + ' は画面を見ないでください</div>' +
       '</div>'
     );
   }
@@ -780,7 +889,7 @@
     return (
       '<div class="panel">' +
       '<div class="panel-header">' +
-      '<h2>' + playerLabel(pid) + ': ベンチに置くカードを3枚選択</h2>' +
+      '<h2>' + seatLabel(pid) + ': ベンチに置くカードを3枚選択</h2>' +
       '<div class="panel-sub">手札からベンチへ裏側の控えを作ります。あと' + Math.max(need, 0) + '枚選んでください。</div>' +
       '</div>' +
       '<div class="panel-body">' +
@@ -810,7 +919,7 @@
 
     var body = '';
     body += '<div class="zone-block opp">';
-    body += '<div class="zone-title"><span>相手の場（' + playerLabel(oid) + '）</span><span>手札 ' + o.hand.length + '枚</span></div>';
+    body += '<div class="zone-title"><span>相手の場（' + seatLabel(oid) + '）</span><span>手札 ' + o.hand.length + '枚</span></div>';
     body += '<div class="cardrow' + (o.field.length ? '' : ' empty') + '">' + o.field.map(function (c) { return cardHtml(c); }).join('') + '</div>';
     body += '<div class="zone-title" style="margin-top:0.5rem;">相手のベンチ</div>';
     body += '<div class="cardrow' + (o.bench.length ? '' : ' empty') + '">' + o.bench.map(function (c) { return cardHtml(c); }).join('') + '</div>';
@@ -857,11 +966,11 @@
     return (
       '<div class="statusbar">' +
       '<div class="status-row">' +
-      '<span class="who ' + pid.toLowerCase() + '">' + playerLabel(pid) + ' のターン (' + game.turnNumber + ')</span>' +
+      '<span class="who ' + pid.toLowerCase() + '">' + seatLabel(pid) + ' のターン (' + game.turnNumber + ')</span>' +
       '</div>' +
       '<div class="status-row" style="margin-top:0.3rem;">' +
       '<span>' + lifePips('P1', game.players.P1.life.length) + '</span>' +
-      '<span style="font-size:0.68rem;color:var(--ink-soft);">' + playerLabel('P1') + ' vs ' + playerLabel('P2') + '</span>' +
+      '<span style="font-size:0.68rem;color:var(--ink-soft);">' + seatLabel('P1') + ' vs ' + seatLabel('P2') + '</span>' +
       '<span>' + lifePips('P2', game.players.P2.life.length) + '</span>' +
       '</div>' +
       stepperHtml(game.phase) +
@@ -896,7 +1005,7 @@
       var total = b.attackerCard.attack + (advantage ? CONFIG.ATTRIBUTE_ADVANTAGE_BONUS : 0) + comboSum;
       return (
         '<div class="panel">' +
-        '<div class="panel-header"><h2>' + playerLabel(pid) + ': コンボを追加（任意・最大3枚）</h2>' +
+        '<div class="panel-header"><h2>' + seatLabel(pid) + ': コンボを追加（任意・最大3枚）</h2>' +
         '<div class="panel-sub">対象: ' + esc(b.targetCard.id) + (advantage ? '（属性有利 +1000）' : '') + '</div></div>' +
         '<div class="panel-body">' +
         '<div class="total-banner">攻撃合計: ' + total + '</div>' +
@@ -925,11 +1034,11 @@
       return (
         '<div class="pass-screen">' +
         '<div class="pass-card">' +
-        '<div class="pass-badge ' + oid.toLowerCase() + '">' + playerLabel(oid) + '</div>' +
-        '<div class="pass-msg">' + playerLabel(pid) + ' が「' + esc(b.attackerCard.id) + '」で攻撃を宣言しました。防御を選んでください。</div>' +
+        '<div class="pass-badge ' + oid.toLowerCase() + '">' + seatLabel(oid) + '</div>' +
+        '<div class="pass-msg">' + seatLabel(pid) + ' が「' + esc(b.attackerCard.id) + '」で攻撃を宣言しました。防御を選んでください。</div>' +
         '<button class="btn btn-accent btn-block" data-action="revealDefender">タップして画面を見る</button>' +
         '</div>' +
-        '<div class="pass-warn">' + playerLabel(pid) + ' は画面を見ないでください</div>' +
+        '<div class="pass-warn">' + seatLabel(pid) + ' は画面を見ないでください</div>' +
         '</div>'
       );
     }
@@ -945,7 +1054,7 @@
       var defTotal = b.targetCard.defense + defComboSum;
       return (
         '<div class="panel">' +
-        '<div class="panel-header"><h2>' + playerLabel(oid) + ': 防御コンボを追加（任意・最大3枚）</h2></div>' +
+        '<div class="panel-header"><h2>' + seatLabel(oid) + ': 防御コンボを追加（任意・最大3枚）</h2></div>' +
         '<div class="panel-body">' +
         '<div class="matchup">' +
         cardHtml(b.attackerCard, { mode: 'attack' }) +
@@ -990,7 +1099,7 @@
         '</div>' +
         '<div class="panel-sub" style="text-align:center;">' +
         (r.attackSucceeded
-          ? playerLabel(oid) + ' はライフを1枚失いました（相手の手札に加わりました）'
+          ? seatLabel(oid) + ' はライフを1枚失いました（相手の手札に加わりました）'
           : esc(r.defenderCard.id) + ' は場に残りました') +
         '</div>' +
         '</div>' +
@@ -1003,11 +1112,11 @@
       return (
         '<div class="pass-screen">' +
         '<div class="pass-card">' +
-        '<div class="pass-badge ' + pid.toLowerCase() + '">' + playerLabel(pid) + '</div>' +
-        '<div class="pass-msg">結果を確認しました。画面を ' + playerLabel(pid) + ' に返してください。</div>' +
+        '<div class="pass-badge ' + pid.toLowerCase() + '">' + seatLabel(pid) + '</div>' +
+        '<div class="pass-msg">結果を確認しました。画面を ' + seatLabel(pid) + ' に返してください。</div>' +
         '<button class="btn btn-accent btn-block" data-action="backToAttacker">タップして画面を見る</button>' +
         '</div>' +
-        '<div class="pass-warn">' + playerLabel(oid) + ' は画面を見ないでください</div>' +
+        '<div class="pass-warn">' + seatLabel(oid) + ' は画面を見ないでください</div>' +
         '</div>'
       );
     }
@@ -1018,8 +1127,8 @@
   function renderGameOver() {
     return (
       '<div class="gameover-screen">' +
-      '<div class="win-title display">🏆 ' + playerLabel(game.winner) + ' の勝利！</div>' +
-      '<div class="panel-sub">' + playerLabel(opponentOf(game.winner)) + ' はライフを ' + CONFIG.LIFE_COUNT + ' 枚すべて失いました。</div>' +
+      '<div class="win-title display">🏆 ' + seatLabel(game.winner) + ' の勝利！</div>' +
+      '<div class="panel-sub">' + seatLabel(opponentOf(game.winner)) + ' はライフを ' + CONFIG.LIFE_COUNT + ' 枚すべて失いました。</div>' +
       '<button class="btn btn-accent" data-action="restart">もう一度あそぶ</button>' +
       '</div>'
     );
@@ -1034,14 +1143,96 @@
     render();
   }
 
+  /**
+   * ベンチ回復＋ドローを行い、次のプレイヤーのターン画面へ進める。
+   * CPU対戦中でCPUの番なら、そのままCPUのターンを自動で進行する。
+   * 人間の番の場合、CPU対戦中は画面を渡す相手がいないのでパス画面を省略する。
+   */
+  function startNextTurn() {
+    if (ui.vsCpu && game.currentPlayer === CPU_ID) {
+      beginTurnBenchRecovery();
+      drawPhase();
+      runCpuTurn();
+      return;
+    }
+    if (ui.vsCpu) {
+      beginTurnBenchRecovery();
+      drawPhase();
+      ui.screen = 'turn';
+      return;
+    }
+    goPass(game.currentPlayer, 'あなたのターンです。', function () {
+      beginTurnBenchRecovery();
+      drawPhase();
+      ui.screen = 'turn';
+    });
+  }
+
+  function runCpuTurn() {
+    cpuRunMainPhase(CPU_ID);
+    advanceCpuBattle();
+  }
+
+  /** CPUの番のバトルフェイズを1手ずつ進める。攻撃があれば人間の防御コンボ入力へ、無ければ手番終了。 */
+  function advanceCpuBattle() {
+    var next = cpuPickNextAttack(CPU_ID);
+    if (next) {
+      game.cpuPassiveStreak = 0;
+    } else {
+      var cpu = game.players[CPU_ID];
+      var human = game.players[opponentOf(CPU_ID)];
+      var hasUnusedField = cpu.field.some(function (c) { return !game.attackedFieldCardIdsThisTurn[c.id]; });
+      var hasTarget = (human.bench.length + human.field.length) > 0;
+      if (hasUnusedField && hasTarget) {
+        // 勝てる手が無いまま数ターン経過した場合は、手詰まりを防ぐため負け覚悟の一手を打つ。
+        game.cpuPassiveStreak += 1;
+        if (game.cpuPassiveStreak >= 2) {
+          next = cpuWorstCaseFallback(CPU_ID);
+          game.cpuPassiveStreak = 0;
+        }
+      } else {
+        game.cpuPassiveStreak = 0;
+      }
+    }
+
+    if (!next) {
+      endTurn();
+      if (game.phase === 'GAME_OVER') { ui.screen = 'gameover'; render(); return; }
+      startNextTurn();
+      render();
+      return;
+    }
+    var p = game.players[CPU_ID];
+    var humanId = opponentOf(CPU_ID);
+    var targetInfo = cardInPlay(game.players[humanId], next.targetId);
+    ui.battle = {
+      step: 'defenderCombo',
+      cpuAttack: true,
+      attackerCard: findIn(p.field, next.attackerId),
+      targetCard: targetInfo.card,
+      atkCombo: next.comboIds,
+      defCombo: [],
+      atkComboCardsSnapshot: next.comboIds.map(function (cid) { return findIn(p.hand, cid); }),
+    };
+    ui.screen = 'turn';
+    render();
+  }
+
   function handleAction(action, id) {
-    if (action === 'start') {
+    if (action === 'start' || action === 'startCpu') {
+      ui.vsCpu = (action === 'startCpu');
       setupNewGame('P1');
-      goPass('P1', 'ベンチに置くカードを選びます。', function () {
+      if (ui.vsCpu) {
         ui.screen = 'benchSelect';
         ui.benchSelPlayer = 'P1';
         ui.benchSel = [];
-      });
+      } else {
+        goPass('P1', 'ベンチに置くカードを選びます。', function () {
+          ui.screen = 'benchSelect';
+          ui.benchSelPlayer = 'P1';
+          ui.benchSel = [];
+        });
+      }
       render();
       return;
     }
@@ -1057,17 +1248,18 @@
     if (action === 'confirmBench') {
       placeInitialBench(ui.benchSelPlayer, ui.benchSel);
       if (ui.benchSelPlayer === 'P1') {
-        goPass('P2', 'ベンチに置くカードを選びます。', function () {
-          ui.screen = 'benchSelect';
-          ui.benchSelPlayer = 'P2';
-          ui.benchSel = [];
-        });
+        if (ui.vsCpu) {
+          cpuChooseBench(CPU_ID);
+          startNextTurn();
+        } else {
+          goPass('P2', 'ベンチに置くカードを選びます。', function () {
+            ui.screen = 'benchSelect';
+            ui.benchSelPlayer = 'P2';
+            ui.benchSel = [];
+          });
+        }
       } else {
-        goPass(game.currentPlayer, 'あなたのターンです。', function () {
-          beginTurnBenchRecovery();
-          drawPhase();
-          ui.screen = 'turn';
-        });
+        startNextTurn();
       }
       render();
       return;
@@ -1080,11 +1272,7 @@
     if (action === 'endTurn') {
       endTurn();
       if (game.phase === 'GAME_OVER') { ui.screen = 'gameover'; render(); return; }
-      goPass(game.currentPlayer, 'あなたのターンです。', function () {
-        beginTurnBenchRecovery();
-        drawPhase();
-        ui.screen = 'turn';
-      });
+      startNextTurn();
       render();
       return;
     }
@@ -1119,7 +1307,16 @@
     if (action === 'confirmAttackerCombo') {
       var b2 = ui.battle;
       b2.atkComboCardsSnapshot = b2.atkCombo.map(function (cid) { return findIn(cur().hand, cid); });
-      b2.step = 'passDefender';
+      var defenderId = opponentOf(game.currentPlayer);
+      if (ui.vsCpu && defenderId === CPU_ID) {
+        // CPUの防御は一切のパス画面なしで即座に決着する（人間はずっと画面を持ったまま）。
+        b2.defCombo = cpuChooseDefenseCombo(b2.attackerCard, b2.targetCard, b2.atkComboCardsSnapshot, game.players[CPU_ID].hand);
+        b2.result = declareAttack(b2.attackerCard.id, b2.targetCard.id, b2.atkCombo, b2.defCombo);
+        b2.step = 'result';
+        b2.skipPassBack = true;
+      } else {
+        b2.step = 'passDefender';
+      }
       render();
       return;
     }
@@ -1142,6 +1339,8 @@
     }
     if (action === 'ackResult') {
       if (game.phase === 'GAME_OVER') { ui.battle = null; ui.screen = 'gameover'; render(); return; }
+      if (ui.battle.cpuAttack) { ui.battle = null; advanceCpuBattle(); return; }
+      if (ui.battle.skipPassBack) { ui.battle = null; render(); return; }
       ui.battle.step = 'passBackToAttacker';
       render();
       return;
@@ -1150,6 +1349,7 @@
 
     if (action === 'restart') {
       ui.screen = 'title';
+      ui.vsCpu = false;
       ui.battle = null;
       game = null;
       render();

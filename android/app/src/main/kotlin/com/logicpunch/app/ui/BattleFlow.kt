@@ -180,7 +180,7 @@ fun DefenderComboScreen(
 }
 
 @Composable
-fun BattleResultScreen(result: AttackResult, defenderId: PlayerId, onAck: () -> Unit) {
+fun BattleResultScreen(result: AttackResult, defenderId: PlayerId, vsCpu: Boolean = false, onAck: () -> Unit) {
     Column(modifier = Modifier.fillMaxSize()) {
         Text("バトル結果", fontSize = 18.sp, modifier = Modifier.padding(16.dp))
         Column(modifier = Modifier.weight(1f).padding(horizontal = 16.dp)) {
@@ -213,7 +213,7 @@ fun BattleResultScreen(result: AttackResult, defenderId: PlayerId, onAck: () -> 
             }
             Text(
                 if (result.attackSucceeded) {
-                    playerLabel(defenderId) + " はライフを1枚失いました（相手の手札に加わりました）"
+                    seatLabel(defenderId, vsCpu) + " はライフを1枚失いました（相手の手札に加わりました）"
                 } else {
                     result.defenderCard.id + " は場に残りました"
                 },

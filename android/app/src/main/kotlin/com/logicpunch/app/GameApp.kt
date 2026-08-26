@@ -21,7 +21,10 @@ fun GameApp(viewModel: GameViewModel = viewModel()) {
     @Suppress("UNUSED_VARIABLE") val revision = viewModel.revision
 
     when (viewModel.screen) {
-        Screen.TITLE -> TitleScreen(onStart = viewModel::startGame)
+        Screen.TITLE -> TitleScreen(
+            onStartCpu = { viewModel.startGame(vsCpu = true) },
+            onStartPvp = { viewModel.startGame(vsCpu = false) },
+        )
 
         Screen.PASS -> {
             val info = viewModel.passInfo
@@ -48,6 +51,7 @@ fun GameApp(viewModel: GameViewModel = viewModel()) {
             if (draft == null) {
                 TurnScreen(
                     state = viewModel.state,
+                    vsCpu = viewModel.vsCpu,
                     onFieldCardTap = viewModel::startAttack,
                     onBenchToField = viewModel::moveBenchToField,
                     onHandToBench = viewModel::moveHandToBench,
@@ -62,7 +66,7 @@ fun GameApp(viewModel: GameViewModel = viewModel()) {
         Screen.GAME_OVER -> {
             val winner = viewModel.state.winner
             if (winner != null) {
-                GameOverScreen(winner = winner, onRestart = viewModel::restart)
+                GameOverScreen(winner = winner, vsCpu = viewModel.vsCpu, onRestart = viewModel::restart)
             }
         }
     }
@@ -117,7 +121,7 @@ private fun BattleDraftFlow(viewModel: GameViewModel, draft: BattleDraft) {
         BattleStep.RESULT -> {
             val result = draft.result
             if (result != null) {
-                BattleResultScreen(result = result, defenderId = defenderId, onAck = viewModel::ackResult)
+                BattleResultScreen(result = result, defenderId = defenderId, vsCpu = viewModel.vsCpu, onAck = viewModel::ackResult)
             }
         }
 

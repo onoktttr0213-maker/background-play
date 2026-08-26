@@ -20,7 +20,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 
 @Composable
-fun TitleScreen(onStart: () -> Unit) {
+fun TitleScreen(onStartCpu: () -> Unit, onStartPvp: () -> Unit) {
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -36,20 +36,26 @@ fun TitleScreen(onStart: () -> Unit) {
         )
         Text(
             "日常の小言バトル。5つのテーマ40枚のカードで、相手を正論で追い詰めろ。" +
-                "2人で1台のスマホを交互に渡して遊ぶローカル対戦です。",
+                "2人で1台のスマホを交互に渡すローカル対戦と、1人でも遊べるCPU対戦があります。",
             fontSize = 14.sp,
             textAlign = TextAlign.Center,
             color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.7f),
             modifier = Modifier.padding(vertical = 16.dp),
         )
         Button(
-            onClick = onStart,
+            onClick = onStartCpu,
             colors = ButtonDefaults.buttonColors(
                 containerColor = MaterialTheme.colorScheme.primary,
                 contentColor = MaterialTheme.colorScheme.onPrimary,
             ),
         ) {
-            Text("たいせん開始", fontSize = 18.sp)
+            Text("CPU対戦（1人でテストプレイ）", fontSize = 16.sp)
+        }
+        Button(
+            onClick = onStartPvp,
+            modifier = Modifier.padding(top = 10.dp),
+        ) {
+            Text("2人対戦（パス&プレイ）", fontSize = 15.sp)
         }
         Column(
             modifier = Modifier

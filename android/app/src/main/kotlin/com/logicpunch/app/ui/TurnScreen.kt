@@ -34,6 +34,7 @@ import com.logicpunch.core.TurnPhase
 @Composable
 fun TurnScreen(
     state: GameState,
+    vsCpu: Boolean = false,
     onFieldCardTap: (String) -> Unit,
     onBenchToField: (String) -> Unit,
     onHandToBench: (String) -> Unit,
@@ -46,14 +47,14 @@ fun TurnScreen(
     val other = state.player(oid)
 
     Column(modifier = Modifier.fillMaxSize()) {
-        StatusBar(state)
+        StatusBar(state, vsCpu)
         Column(
             modifier = Modifier
                 .weight(1f)
                 .verticalScroll(rememberScrollState()),
         ) {
             ZoneBlock(
-                title = "相手の場（" + playerLabel(oid) + "）",
+                title = "相手の場（" + seatLabel(oid, vsCpu) + "）",
                 trailing = "手札 ${other.hand.size}枚",
                 background = MaterialTheme.colorScheme.surface,
             ) {
@@ -157,7 +158,7 @@ fun TurnScreen(
 }
 
 @Composable
-private fun StatusBar(state: GameState) {
+private fun StatusBar(state: GameState, vsCpu: Boolean) {
     val pid = state.currentPlayer
     Column(
         modifier = Modifier
@@ -166,7 +167,7 @@ private fun StatusBar(state: GameState) {
             .padding(horizontal = 12.dp, vertical = 8.dp),
     ) {
         Text(
-            playerLabel(pid) + " のターン (${state.turnNumber})",
+            seatLabel(pid, vsCpu) + " のターン (${state.turnNumber})",
             color = Color.White,
             fontWeight = FontWeight.Bold,
             fontSize = 12.sp,
@@ -181,7 +182,7 @@ private fun StatusBar(state: GameState) {
         ) {
             LifePips(state.player(PlayerId.PLAYER_ONE).life.size, attributeColorForPlayer(PlayerId.PLAYER_ONE))
             Text(
-                playerLabel(PlayerId.PLAYER_ONE) + " vs " + playerLabel(PlayerId.PLAYER_TWO),
+                seatLabel(PlayerId.PLAYER_ONE, vsCpu) + " vs " + seatLabel(PlayerId.PLAYER_TWO, vsCpu),
                 fontSize = 10.sp,
                 color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.6f),
             )
