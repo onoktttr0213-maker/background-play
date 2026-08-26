@@ -43,14 +43,16 @@ fun CardTile(
     mode: CardStatMode = CardStatMode.BOTH,
     selected: Boolean = false,
     dim: Boolean = false,
-    showExcuse: Boolean = false,
     onClick: (() -> Unit)? = null,
 ) {
     val borderColor = if (selected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onBackground
     val borderWidth = if (selected) 3.dp else 2.dp
     Column(
-        modifier = modifier
-            .width(136.dp)
+        // Default width first, then the caller's modifier — so passing Modifier.fillMaxWidth()
+        // (as the grid-based pickers do) overrides this default instead of being overridden by it.
+        modifier = Modifier
+            .width(156.dp)
+            .then(modifier)
             .alpha(if (dim) 0.4f else 1f)
             .border(borderWidth, borderColor, RoundedCornerShape(10.dp))
             .background(MaterialTheme.colorScheme.surface, RoundedCornerShape(10.dp))
@@ -89,10 +91,32 @@ fun CardTile(
             modifier = Modifier.padding(top = 2.dp),
         )
         Text(
-            text = "「" + (if (showExcuse) card.excuseText else card.attackText) + "」",
+            text = "論破",
+            fontSize = 9.sp,
+            fontWeight = FontWeight.Bold,
+            letterSpacing = 0.5.sp,
+            color = MaterialTheme.colorScheme.primary,
+            modifier = Modifier.padding(top = 4.dp),
+        )
+        Text(
+            text = "「" + card.attackText + "」",
             fontSize = 11.sp,
             lineHeight = 15.sp,
-            modifier = Modifier.padding(vertical = 4.dp),
+            modifier = Modifier.padding(top = 1.dp),
+        )
+        Text(
+            text = "言い訳",
+            fontSize = 9.sp,
+            fontWeight = FontWeight.Bold,
+            letterSpacing = 0.5.sp,
+            color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.6f),
+            modifier = Modifier.padding(top = 4.dp),
+        )
+        Text(
+            text = "「" + card.excuseText + "」",
+            fontSize = 11.sp,
+            lineHeight = 15.sp,
+            modifier = Modifier.padding(top = 1.dp, bottom = 3.dp),
         )
         Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
             when (mode) {

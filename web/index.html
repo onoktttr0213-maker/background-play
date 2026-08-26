@@ -231,7 +231,7 @@
   /* ---------- Card tile ---------- */
   .card {
     flex: 0 0 auto;
-    width: 132px;
+    width: 150px;
     border: 2.5px solid var(--line);
     border-radius: 10px;
     background: var(--bg-raised);
@@ -256,11 +256,19 @@
   .attr-tab.green { background: var(--green); }
   .role-tag { font-size: 0.6rem; color: var(--ink-soft); font-weight: 700; }
   .card-theme { font-size: 0.6rem; color: var(--ink-soft); margin-top: 0.25em; }
+  .card-text-label {
+    font-size: 0.56rem;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    margin-top: 0.4em;
+  }
+  .card-text-label.atk { color: var(--accent); }
+  .card-text-label.exc { color: var(--ink-soft); }
   .card-text {
-    font-size: 0.68rem;
-    line-height: 1.35;
-    margin: 0.35em 0;
-    min-height: 2.6em;
+    font-size: 0.66rem;
+    line-height: 1.32;
+    margin: 0.15em 0 0;
+    min-height: 2.1em;
   }
   .stat-row { display: flex; gap: 0.5em; font-size: 0.66rem; font-weight: 700; margin-top: 0.2em; }
   .stat { display: flex; flex-direction: column; align-items: center; flex: 1; border-top: 1.5px solid var(--line-soft); padding-top: 0.2em; }
@@ -297,6 +305,7 @@
     border-radius: 12px;
     padding: 0.7rem;
     margin-bottom: 0.9rem;
+    overflow-x: auto;
   }
   .matchup .vs { font-family: "Yusei Magic", sans-serif; font-size: 1.1rem; color: var(--ink-soft); }
   .grid-cards { display: grid; grid-template-columns: repeat(2, 1fr); gap: 0.55rem; }
@@ -795,7 +804,6 @@
         '<div class="stat"><span>combo</span><span class="num">' + c.combo + '</span></div>' +
         '</div>';
     }
-    var text = opts.showExcuse ? c.excuseText : c.attackText;
     return (
       '<div class="' + cls + '" data-action="' + (opts.action || '') + '" data-id="' + esc(c.id) + '">' +
       '<div class="card-id">' + esc(c.id) + '</div>' +
@@ -804,7 +812,10 @@
       '<span class="role-tag">' + esc(c.role.replace('型','')) + '</span>' +
       '</div>' +
       '<div class="card-theme">' + esc(c.theme) + '</div>' +
-      '<div class="card-text">「' + esc(text) + '」</div>' +
+      '<div class="card-text-label atk">論破</div>' +
+      '<div class="card-text">「' + esc(c.attackText) + '」</div>' +
+      '<div class="card-text-label exc">言い訳</div>' +
+      '<div class="card-text">「' + esc(c.excuseText) + '」</div>' +
       statHtml +
       '</div>'
     );

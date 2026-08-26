@@ -1,6 +1,7 @@
 package com.logicpunch.app.ui
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -12,6 +13,7 @@ import androidx.compose.foundation.layout.weight
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -240,13 +242,14 @@ private fun Matchup(attacker: Card, defender: Card) {
         modifier = Modifier
             .fillMaxWidth()
             .background(MaterialTheme.colorScheme.surface, RoundedCornerShape(12.dp))
+            .horizontalScroll(rememberScrollState())
             .padding(10.dp),
         horizontalArrangement = Arrangement.spacedBy(8.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        CardTile(attacker, mode = CardStatMode.ATTACK, modifier = Modifier.weight(1f))
+        CardTile(attacker, mode = CardStatMode.ATTACK)
         Text("VS", fontSize = 16.sp, color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.6f))
-        CardTile(defender, mode = CardStatMode.DEFENSE, modifier = Modifier.weight(1f))
+        CardTile(defender, mode = CardStatMode.DEFENSE)
     }
 }
 
