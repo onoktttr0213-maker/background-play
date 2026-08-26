@@ -1,0 +1,17 @@
+# Gradle
+.gradle/
+build/
+*/build/
+*/*/build/
+local.properties
+
+# Android Studio / IntelliJ
+.idea/
+*.iml
+.cxx/
+
+# macOS
+.DS_Store
+
+# Node / Playwright (used only for local verification of web/index.html)
+node_modules/

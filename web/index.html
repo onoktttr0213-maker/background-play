@@ -1,0 +1,1202 @@
+<title>正論パンチ</title>
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Yusei+Magic&family=Zen+Kaku+Gothic+New:wght@400;500;700;900&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #eef0ea;
+    --bg-raised: #ffffff;
+    --ink: #17181c;
+    --ink-soft: #4b4d54;
+    --line: #17181c;
+    --line-soft: #c9ccc2;
+    --accent: #f5b400;
+    --accent-ink: #17181c;
+    --red: #d6453b;
+    --blue: #276fb5;
+    --green: #3c8f52;
+    --danger: #c23b3b;
+    --shadow: rgba(23, 24, 28, 0.18);
+    --board-opp: #e3dfd3;
+    --board-self: #dfe6da;
+    color-scheme: light;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #131417;
+      --bg-raised: #1d1f24;
+      --ink: #f1efe6;
+      --ink-soft: #b7b9c2;
+      --line: #f1efe6;
+      --line-soft: #3a3d46;
+      --accent: #ffd75e;
+      --accent-ink: #17181c;
+      --red: #ff8177;
+      --blue: #7db3ef;
+      --green: #79d492;
+      --danger: #ff8177;
+      --shadow: rgba(0, 0, 0, 0.5);
+      --board-opp: #24262c;
+      --board-self: #1c2620;
+      color-scheme: dark;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #131417;
+    --bg-raised: #1d1f24;
+    --ink: #f1efe6;
+    --ink-soft: #b7b9c2;
+    --line: #f1efe6;
+    --line-soft: #3a3d46;
+    --accent: #ffd75e;
+    --accent-ink: #17181c;
+    --red: #ff8177;
+    --blue: #7db3ef;
+    --green: #79d492;
+    --danger: #ff8177;
+    --shadow: rgba(0, 0, 0, 0.5);
+    --board-opp: #24262c;
+    --board-self: #1c2620;
+    color-scheme: dark;
+  }
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html, body { margin: 0; padding: 0; }
+  body {
+    background: var(--bg);
+    color: var(--ink);
+    font-family: "Zen Kaku Gothic New", "Hiragino Sans", sans-serif;
+    font-variant-numeric: tabular-nums;
+    min-height: 100vh;
+    overscroll-behavior-y: none;
+  }
+  h1, h2, h3, .display {
+    font-family: "Yusei Magic", "Zen Kaku Gothic New", sans-serif;
+    text-wrap: balance;
+    font-weight: 400;
+  }
+  #app {
+    max-width: 520px;
+    margin: 0 auto;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    position: relative;
+  }
+  button {
+    font-family: inherit;
+    cursor: pointer;
+  }
+  .btn {
+    border: 3px solid var(--line);
+    background: var(--bg-raised);
+    color: var(--ink);
+    border-radius: 10px;
+    padding: 0.7em 1em;
+    font-size: 1rem;
+    font-weight: 700;
+    box-shadow: 3px 3px 0 var(--line);
+    transition: transform 0.08s ease, box-shadow 0.08s ease;
+  }
+  .btn:active { transform: translate(2px, 2px); box-shadow: 1px 1px 0 var(--line); }
+  .btn:disabled { opacity: 0.35; cursor: not-allowed; box-shadow: none; transform: none; }
+  .btn-accent { background: var(--accent); color: var(--accent-ink); }
+  .btn-block { width: 100%; }
+  .btn-sm { padding: 0.4em 0.7em; font-size: 0.85rem; box-shadow: 2px 2px 0 var(--line); }
+  .btn-ghost { box-shadow: none; background: transparent; border-color: var(--line-soft); color: var(--ink-soft); }
+
+  /* ---------- Title screen ---------- */
+  .title-screen {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    padding: 2rem 1.5rem;
+    gap: 1.4rem;
+  }
+  .title-screen .logo {
+    font-size: 2.6rem;
+    line-height: 1.25;
+    letter-spacing: 0.02em;
+  }
+  .title-screen .logo .punch { color: var(--accent); -webkit-text-stroke: 1.5px var(--line); }
+  .title-screen .tagline { color: var(--ink-soft); font-size: 0.95rem; max-width: 30ch; }
+  .rules-box {
+    text-align: left;
+    background: var(--bg-raised);
+    border: 3px solid var(--line);
+    border-radius: 12px;
+    padding: 1rem 1.1rem;
+    font-size: 0.82rem;
+    line-height: 1.6;
+    color: var(--ink-soft);
+    max-width: 420px;
+  }
+  .rules-box b { color: var(--ink); }
+
+  /* ---------- Pass screen ---------- */
+  .pass-screen {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 1.3rem;
+    padding: 2rem;
+    text-align: center;
+  }
+  .pass-card {
+    width: 100%;
+    max-width: 320px;
+    border: 3px solid var(--line);
+    border-radius: 16px;
+    background: var(--bg-raised);
+    padding: 2.2rem 1.4rem;
+    box-shadow: 5px 5px 0 var(--line);
+  }
+  .pass-badge {
+    display: inline-block;
+    font-family: "Yusei Magic", sans-serif;
+    font-size: 1.4rem;
+    padding: 0.3em 0.9em;
+    border-radius: 999px;
+    border: 3px solid var(--line);
+    margin-bottom: 1rem;
+  }
+  .pass-badge.p1 { background: var(--blue); color: #fff; }
+  .pass-badge.p2 { background: var(--red); color: #fff; }
+  .pass-msg { font-size: 0.9rem; color: var(--ink-soft); margin: 0.6rem 0 1.4rem; }
+  .pass-warn { font-size: 0.78rem; color: var(--danger); font-weight: 700; }
+
+  /* ---------- Top status bar ---------- */
+  .statusbar {
+    position: sticky;
+    top: 0;
+    z-index: 5;
+    background: var(--bg);
+    border-bottom: 3px solid var(--line);
+    padding: 0.55rem 0.8rem 0.6rem;
+  }
+  .status-row { display: flex; justify-content: space-between; align-items: center; gap: 0.5rem; }
+  .life-pips { display: flex; gap: 3px; }
+  .pip { width: 11px; height: 11px; border-radius: 3px; border: 2px solid var(--line); }
+  .pip.on.p1 { background: var(--blue); }
+  .pip.on.p2 { background: var(--red); }
+  .pip.off { background: transparent; opacity: 0.3; }
+  .who {
+    font-family: "Yusei Magic", sans-serif;
+    font-size: 0.72rem;
+    padding: 0.15em 0.6em;
+    border-radius: 999px;
+    border: 2px solid var(--line);
+  }
+  .who.p1 { background: var(--blue); color: #fff; }
+  .who.p2 { background: var(--red); color: #fff; }
+  .stepper { display: flex; gap: 4px; margin-top: 0.45rem; font-size: 0.68rem; }
+  .step { flex: 1; text-align: center; padding: 0.25em 0; border: 2px solid var(--line-soft); border-radius: 6px; color: var(--ink-soft); }
+  .step.active { border-color: var(--line); background: var(--accent); color: var(--accent-ink); font-weight: 700; }
+  .notice { font-size: 0.72rem; color: var(--ink-soft); margin-top: 0.35rem; }
+
+  /* ---------- Board ---------- */
+  .board { flex: 1; overflow-y: auto; padding-bottom: 6.5rem; }
+  .zone-block { padding: 0.7rem 0.8rem 0.9rem; }
+  .zone-block.opp { background: var(--board-opp); }
+  .zone-block.self { background: var(--board-self); }
+  .zone-title {
+    font-size: 0.72rem;
+    font-weight: 700;
+    color: var(--ink-soft);
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 0.35rem;
+    letter-spacing: 0.04em;
+  }
+  .cardrow { display: flex; gap: 0.5rem; overflow-x: auto; padding-bottom: 0.2rem; }
+  .cardrow.empty::after { content: "（なし）"; color: var(--ink-soft); font-size: 0.75rem; padding: 0.4rem 0; }
+  .facedown {
+    flex: 0 0 auto;
+    width: 42px;
+    height: 58px;
+    border: 2px dashed var(--line-soft);
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--ink-soft);
+    font-size: 0.65rem;
+  }
+
+  /* ---------- Card tile ---------- */
+  .card {
+    flex: 0 0 auto;
+    width: 132px;
+    border: 2.5px solid var(--line);
+    border-radius: 10px;
+    background: var(--bg-raised);
+    padding: 0.4rem 0.5rem 0.5rem;
+    position: relative;
+    text-align: left;
+  }
+  .card.selectable { cursor: pointer; }
+  .card.selected { outline: 3px solid var(--accent); outline-offset: 1px; }
+  .card.dim { opacity: 0.42; }
+  .card-top { display: flex; justify-content: space-between; align-items: flex-start; gap: 0.3em; }
+  .attr-tab {
+    font-size: 0.62rem;
+    font-weight: 700;
+    color: #fff;
+    padding: 0.05em 0.5em;
+    border-radius: 999px;
+    border: 1.5px solid var(--line);
+  }
+  .attr-tab.red { background: var(--red); }
+  .attr-tab.blue { background: var(--blue); }
+  .attr-tab.green { background: var(--green); }
+  .role-tag { font-size: 0.6rem; color: var(--ink-soft); font-weight: 700; }
+  .card-theme { font-size: 0.6rem; color: var(--ink-soft); margin-top: 0.25em; }
+  .card-text {
+    font-size: 0.68rem;
+    line-height: 1.35;
+    margin: 0.35em 0;
+    min-height: 2.6em;
+  }
+  .stat-row { display: flex; gap: 0.5em; font-size: 0.66rem; font-weight: 700; margin-top: 0.2em; }
+  .stat { display: flex; flex-direction: column; align-items: center; flex: 1; border-top: 1.5px solid var(--line-soft); padding-top: 0.2em; }
+  .stat .num { font-size: 0.78rem; }
+  .stat.hi { color: var(--accent); }
+  .card-id { position: absolute; top: -8px; right: 6px; font-size: 0.55rem; background: var(--ink); color: var(--bg); padding: 0 0.4em; border-radius: 4px; }
+
+  /* ---------- Action bar ---------- */
+  .actionbar {
+    position: sticky;
+    bottom: 0;
+    background: var(--bg-raised);
+    border-top: 3px solid var(--line);
+    padding: 0.7rem 0.8rem calc(0.7rem + env(safe-area-inset-bottom));
+    display: flex;
+    gap: 0.6rem;
+    flex-wrap: wrap;
+  }
+  .actionbar .btn { flex: 1; min-width: 0; }
+  .hint { font-size: 0.75rem; color: var(--ink-soft); padding: 0.6rem 0.8rem 0; text-align: center; }
+
+  /* ---------- Panels (combo pick / result / setup) ---------- */
+  .panel { flex: 1; display: flex; flex-direction: column; }
+  .panel-header { padding: 0.9rem 1rem 0.4rem; }
+  .panel-header h2 { margin: 0 0 0.2em; font-size: 1.15rem; }
+  .panel-sub { color: var(--ink-soft); font-size: 0.82rem; }
+  .panel-body { flex: 1; overflow-y: auto; padding: 0.6rem 1rem 1rem; }
+  .matchup {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    background: var(--bg-raised);
+    border: 2.5px solid var(--line);
+    border-radius: 12px;
+    padding: 0.7rem;
+    margin-bottom: 0.9rem;
+  }
+  .matchup .vs { font-family: "Yusei Magic", sans-serif; font-size: 1.1rem; color: var(--ink-soft); }
+  .grid-cards { display: grid; grid-template-columns: repeat(2, 1fr); gap: 0.55rem; }
+  .grid-cards .card { width: 100%; }
+  .total-banner {
+    text-align: center;
+    font-family: "Yusei Magic", sans-serif;
+    font-size: 1.5rem;
+    padding: 0.5rem;
+    border: 3px solid var(--line);
+    border-radius: 12px;
+    background: var(--bg-raised);
+    margin: 0.8rem 0;
+  }
+  .result-outcome {
+    text-align: center;
+    font-family: "Yusei Magic", sans-serif;
+    font-size: 1.7rem;
+    padding: 0.8rem;
+    border-radius: 14px;
+    border: 3px solid var(--line);
+    margin-bottom: 0.8rem;
+  }
+  .result-outcome.win { background: var(--accent); color: var(--accent-ink); }
+  .result-outcome.block { background: var(--bg-raised); }
+  .badge-row { display: flex; gap: 0.4rem; justify-content: center; flex-wrap: wrap; margin: 0.5rem 0; }
+  .badge {
+    font-size: 0.72rem;
+    font-weight: 700;
+    padding: 0.2em 0.7em;
+    border-radius: 999px;
+    border: 2px solid var(--line);
+    background: var(--bg-raised);
+  }
+  .log-box {
+    font-size: 0.7rem;
+    color: var(--ink-soft);
+    border-top: 2px dashed var(--line-soft);
+    margin-top: 0.8rem;
+    padding-top: 0.5rem;
+    line-height: 1.6;
+    max-height: 6.5em;
+    overflow-y: auto;
+  }
+  .gameover-screen {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 1.4rem;
+    padding: 2rem;
+    text-align: center;
+  }
+  .gameover-screen .win-title { font-size: 2.1rem; }
+  select, .theme-toggle {
+    font-family: inherit;
+  }
+  .theme-toggle {
+    position: fixed;
+    top: 0.6rem;
+    right: 0.6rem;
+    z-index: 20;
+    border: 2px solid var(--line);
+    background: var(--bg-raised);
+    color: var(--ink);
+    border-radius: 999px;
+    padding: 0.3em 0.7em;
+    font-size: 0.72rem;
+    font-weight: 700;
+    box-shadow: 2px 2px 0 var(--line);
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .btn { transition: none; }
+  }
+</style>
+<div id="app"></div>
+<button class="theme-toggle" id="themeToggle" type="button">🌓 テーマ</button>
+<script>
+(function () {
+  "use strict";
+
+  // ============================================================
+  // Card data (transcribed from docs/cards.json, spec ver 0.7)
+  // ============================================================
+  var CARD_DB = [
+{id:'WK-01',theme:'仕事',role:'攻撃型',attribute:'赤',attack:5000,defense:1000,combo:1000,attackText:'それ、会議で言えばいいのでは？',excuseText:'いや、他の業務が急に入ってきて…'},
+{id:'WK-02',theme:'仕事',role:'攻撃型',attribute:'青',attack:5000,defense:1000,combo:1000,attackText:'忙しいアピールより手を動かした方が早い',excuseText:'上司の指示が二転三転したので'},
+{id:'WK-03',theme:'仕事',role:'バランス型',attribute:'緑',attack:4000,defense:4000,combo:2000,attackText:'まず自分でやってみたら？',excuseText:'そもそも人員が足りていない'},
+{id:'WK-04',theme:'仕事',role:'バランス型',attribute:'赤',attack:4000,defense:4000,combo:2000,attackText:'期限は自分で決めたんですよね',excuseText:'前任者の引き継ぎが雑だったので'},
+{id:'WK-05',theme:'仕事',role:'防御型',attribute:'青',attack:1000,defense:5000,combo:1000,attackText:'メールで済む話では？',excuseText:'システムの調子が悪くて'},
+{id:'WK-06',theme:'仕事',role:'防御型',attribute:'緑',attack:1000,defense:5000,combo:1000,attackText:'できないなら早く言うべきだった',excuseText:'確認待ちで止まっていました'},
+{id:'WK-07',theme:'仕事',role:'コンボ型',attribute:'赤',attack:3000,defense:3000,combo:3000,attackText:'締切を守れないなら最初から受けなければいい',excuseText:'引き継ぎ資料が無かったので'},
+{id:'WK-08',theme:'仕事',role:'コンボ型',attribute:'青',attack:3000,defense:3000,combo:3000,attackText:'忙しい忙しい言う人ほど手が遅い',excuseText:'そもそも見積もりが甘かった'},
+{id:'LV-01',theme:'恋愛',role:'攻撃型',attribute:'緑',attack:5000,defense:1000,combo:1000,attackText:'好きなら素直に連絡すればいい',excuseText:'既読つけると即返信しなきゃいけない空気になるから'},
+{id:'LV-02',theme:'恋愛',role:'攻撃型',attribute:'赤',attack:5000,defense:1000,combo:1000,attackText:'好きバレを恐れすぎ',excuseText:'タイミングを見計らってただけ'},
+{id:'LV-03',theme:'恋愛',role:'バランス型',attribute:'青',attack:4000,defense:4000,combo:2000,attackText:'会いたいなら会おうって言えばいい',excuseText:'変に思われたくなかったから'},
+{id:'LV-04',theme:'恋愛',role:'バランス型',attribute:'緑',attack:4000,defense:4000,combo:2000,attackText:'デートの日くらい自分で決めて',excuseText:'忙しそうだったから遠慮した'},
+{id:'LV-05',theme:'恋愛',role:'防御型',attribute:'赤',attack:1000,defense:5000,combo:1000,attackText:'気になるなら聞けばいいのに',excuseText:'何て返せばいいか分からなかった'},
+{id:'LV-06',theme:'恋愛',role:'防御型',attribute:'青',attack:1000,defense:5000,combo:1000,attackText:'既読無視するのは失礼だと思う',excuseText:'本当は考えすぎて送れなかった'},
+{id:'LV-07',theme:'恋愛',role:'コンボ型',attribute:'緑',attack:3000,defense:3000,combo:3000,attackText:'既読つけて既読無視は一番モヤモヤする',excuseText:'気まずくなるのが怖くて'},
+{id:'LV-08',theme:'恋愛',role:'コンボ型',attribute:'赤',attack:3000,defense:3000,combo:3000,attackText:'好きの反対は無関心、放置は一番の裏切り',excuseText:'相手の気持ちが分からなくて動けなかった'},
+{id:'HL-01',theme:'健康',role:'攻撃型',attribute:'青',attack:5000,defense:1000,combo:1000,attackText:'寝ないと治るものも治らない',excuseText:'仕事終わりだと何もする気力が残ってなくて'},
+{id:'HL-02',theme:'健康',role:'攻撃型',attribute:'緑',attack:5000,defense:1000,combo:1000,attackText:'明日から、は永遠に来ない',excuseText:'分かってるけどやめられないんです'},
+{id:'HL-03',theme:'健康',role:'バランス型',attribute:'赤',attack:4000,defense:4000,combo:2000,attackText:'野菜くらい食べたら？',excuseText:'運動する時間がそもそも無いので'},
+{id:'HL-04',theme:'健康',role:'バランス型',attribute:'青',attack:4000,defense:4000,combo:2000,attackText:'運動不足は自分でも分かってるでしょ',excuseText:'ストレスで暴飲暴食してしまって'},
+{id:'HL-05',theme:'健康',role:'防御型',attribute:'緑',attack:1000,defense:5000,combo:1000,attackText:'たまには健康診断行ったら？',excuseText:'体質だから仕方ないんです'},
+{id:'HL-06',theme:'健康',role:'防御型',attribute:'赤',attack:1000,defense:5000,combo:1000,attackText:'スマホ見すぎで目に悪いよ',excuseText:'明日から本気出す予定でした'},
+{id:'HL-07',theme:'健康',role:'コンボ型',attribute:'青',attack:3000,defense:3000,combo:3000,attackText:'不摂生の結果を体調のせいにしないで',excuseText:'忙しさを言い訳にしてしまって'},
+{id:'HL-08',theme:'健康',role:'コンボ型',attribute:'緑',attack:3000,defense:3000,combo:3000,attackText:'ジムの会費払うだけで満足してない？',excuseText:'気づいたら三日坊主になってて'},
+{id:'MN-01',theme:'お金',role:'攻撃型',attribute:'赤',attack:5000,defense:1000,combo:1000,attackText:'欲しいものより必要なものを買ったら？',excuseText:'セールでどうしても買っちゃって'},
+{id:'MN-02',theme:'お金',role:'攻撃型',attribute:'青',attack:5000,defense:1000,combo:1000,attackText:'収入が増えても支出が増えたら一緒',excuseText:'付き合いでどうしても出費がかさんで'},
+{id:'MN-03',theme:'お金',role:'バランス型',attribute:'緑',attack:4000,defense:4000,combo:2000,attackText:'家計簿つければ無駄遣い分かるよ',excuseText:'急な出費が続いただけです'},
+{id:'MN-04',theme:'お金',role:'バランス型',attribute:'赤',attack:4000,defense:4000,combo:2000,attackText:'サブスク解約すればいいのでは',excuseText:'自分へのご褒美です'},
+{id:'MN-05',theme:'お金',role:'防御型',attribute:'青',attack:1000,defense:5000,combo:1000,attackText:'その出費、本当に必要だった？',excuseText:'将来のための自己投資なので'},
+{id:'MN-06',theme:'お金',role:'防御型',attribute:'緑',attack:1000,defense:5000,combo:1000,attackText:'貯金は先に取り分けるものだよ',excuseText:'気づいたらポチッてました'},
+{id:'MN-07',theme:'お金',role:'コンボ型',attribute:'赤',attack:3000,defense:3000,combo:3000,attackText:'ボーナス入っても使い切るなら意味ない',excuseText:'気が大きくなってしまって'},
+{id:'MN-08',theme:'お金',role:'コンボ型',attribute:'青',attack:3000,defense:3000,combo:3000,attackText:'「安いから買う」が一番高くつく',excuseText:'限定と言われると弱くて'},
+{id:'RL-01',theme:'人間関係',role:'攻撃型',attribute:'緑',attack:5000,defense:1000,combo:1000,attackText:'言いたいことがあるならはっきり言えばいい',excuseText:'場の空気を悪くしたくなかったので'},
+{id:'RL-02',theme:'人間関係',role:'攻撃型',attribute:'赤',attack:5000,defense:1000,combo:1000,attackText:'関係を壊したくないなら、まず本音で話すべき',excuseText:'言ってもどうせ変わらないと思って'},
+{id:'RL-03',theme:'人間関係',role:'バランス型',attribute:'青',attack:4000,defense:4000,combo:2000,attackText:'誘われたくないなら断ればいい',excuseText:'嫌われるのが怖くて言えなかった'},
+{id:'RL-04',theme:'人間関係',role:'バランス型',attribute:'緑',attack:4000,defense:4000,combo:2000,attackText:'陰で言うくらいなら本人に言ったら',excuseText:'昔からの付き合いだから今更言えない'},
+{id:'RL-05',theme:'人間関係',role:'防御型',attribute:'赤',attack:1000,defense:5000,combo:1000,attackText:'苦手な人とは距離を置けばいい',excuseText:'その場では言葉が出てこなくて'},
+{id:'RL-06',theme:'人間関係',role:'防御型',attribute:'青',attack:1000,defense:5000,combo:1000,attackText:'空気読むより言葉で伝えた方が早い',excuseText:'後で言おうと思っているうちに時間が経って'},
+{id:'RL-07',theme:'人間関係',role:'コンボ型',attribute:'緑',attack:3000,defense:3000,combo:3000,attackText:'我慢して付き合うのは優しさじゃなくて逃げ',excuseText:'関係を壊すのが怖くて'},
+{id:'RL-08',theme:'人間関係',role:'コンボ型',attribute:'赤',attack:3000,defense:3000,combo:3000,attackText:'察してほしいはただの甘え',excuseText:'うまく言葉にできなくて'}
+  ];
+
+  var CONFIG = {
+    TOTAL_CARDS: 40,
+    ATTRIBUTE_ADVANTAGE_BONUS: 1000,
+    COMBO_MAX_CARDS_FROM_HAND: 3,
+    LIFE_COUNT: 4,
+    STARTING_HAND_FIRST: 7,
+    STARTING_HAND_SECOND: 8,
+    BENCH_SIZE: 3,
+    HAND_REFILL_TARGET: 5,
+    MAX_ATTACKS_PER_TURN: 3,
+  };
+  var ATTR_BEATS = { '赤': '青', '青': '緑', '緑': '赤' };
+  var ATTR_CLASS = { '赤': 'red', '青': 'blue', '緑': 'green' };
+
+  function hasAttributeAdvantage(a, d) { return ATTR_BEATS[a] === d; }
+
+  // ============================================================
+  // Engine (mirrors android/core GameEngine.kt 1:1)
+  // ============================================================
+  function shuffled(arr) {
+    var a = arr.slice();
+    for (var i = a.length - 1; i > 0; i--) {
+      var j = Math.floor(Math.random() * (i + 1));
+      var t = a[i]; a[i] = a[j]; a[j] = t;
+    }
+    return a;
+  }
+
+  function opponentOf(pid) { return pid === 'P1' ? 'P2' : 'P1'; }
+
+  function newPlayer(id) {
+    return { id: id, life: [], hand: [], bench: [], field: [], discard: [], cardsDestroyedByOpponent: 0 };
+  }
+
+  var game = null;
+
+  function setupNewGame(firstPlayer) {
+    var deck = shuffled(CARD_DB);
+    var p1 = newPlayer('P1'), p2 = newPlayer('P2');
+    for (var i = 0; i < CONFIG.LIFE_COUNT; i++) p1.life.push(deck.shift());
+    for (var i2 = 0; i2 < CONFIG.LIFE_COUNT; i2++) p2.life.push(deck.shift());
+    var second = opponentOf(firstPlayer);
+    var players = { P1: p1, P2: p2 };
+    for (var a = 0; a < CONFIG.STARTING_HAND_FIRST; a++) players[firstPlayer].hand.push(deck.shift());
+    for (var b = 0; b < CONFIG.STARTING_HAND_SECOND; b++) players[second].hand.push(deck.shift());
+    game = {
+      players: players,
+      deck: deck,
+      currentPlayer: firstPlayer,
+      turnNumber: 1,
+      phase: 'BENCH_RECOVERY',
+      attacksUsedThisTurn: 0,
+      attackedFieldCardIdsThisTurn: {},
+      winner: null,
+      log: [],
+      lastRecoveryDraw: 0,
+      lastNormalDraw: 0,
+    };
+    log('ゲーム開始。先攻: ' + playerLabel(firstPlayer));
+  }
+
+  function log(msg) {
+    game.log.push(msg);
+    if (game.log.length > 40) game.log.shift();
+  }
+
+  function cur() { return game.players[game.currentPlayer]; }
+  function opp() { return game.players[opponentOf(game.currentPlayer)]; }
+
+  function findAndRemove(list, id) {
+    for (var i = 0; i < list.length; i++) {
+      if (list[i].id === id) return list.splice(i, 1)[0];
+    }
+    return null;
+  }
+  function findIn(list, id) {
+    for (var i = 0; i < list.length; i++) if (list[i].id === id) return list[i];
+    return null;
+  }
+
+  function placeInitialBench(pid, ids) {
+    var p = game.players[pid];
+    if (p.bench.length !== 0) throw new Error('ベンチは既に配置済みです');
+    if (ids.length !== CONFIG.BENCH_SIZE) throw new Error('ベンチは' + CONFIG.BENCH_SIZE + '枚選んでください');
+    ids.forEach(function (id) {
+      var c = findAndRemove(p.hand, id);
+      if (!c) throw new Error('手札に' + id + 'がありません');
+      p.bench.push(c);
+    });
+  }
+
+  function drawOneCard(p) {
+    if (game.deck.length === 0) {
+      var combined = shuffled(game.players.P1.discard.concat(game.players.P2.discard));
+      if (combined.length === 0) return false;
+      game.players.P1.discard = [];
+      game.players.P2.discard = [];
+      game.deck = combined;
+      log('山札切れ: 捨て札をシャッフルして新しい山札にしました（' + combined.length + '枚）');
+    }
+    p.hand.push(game.deck.shift());
+    return true;
+  }
+
+  function beginTurnBenchRecovery() {
+    var p = cur();
+    var destroyed = p.cardsDestroyedByOpponent;
+    p.cardsDestroyedByOpponent = 0;
+    for (var i = 0; i < destroyed; i++) drawOneCard(p);
+    if (destroyed > 0) log(playerLabel(game.currentPlayer) + ': ベンチ回復で' + destroyed + '枚追加ドロー');
+    game.lastRecoveryDraw = destroyed;
+    game.phase = 'DRAW';
+  }
+
+  function drawPhase() {
+    var p = cur();
+    var before = p.hand.length;
+    while (p.hand.length < CONFIG.HAND_REFILL_TARGET) {
+      if (!drawOneCard(p)) break;
+    }
+    game.lastNormalDraw = p.hand.length - before;
+    game.phase = 'MAIN';
+  }
+
+  function moveBenchToField(id) {
+    var p = cur();
+    if (p.field.length >= CONFIG.MAX_ATTACKS_PER_TURN) throw new Error('場はこれ以上出せません');
+    var c = findAndRemove(p.bench, id);
+    if (!c) throw new Error('ベンチにありません');
+    p.field.push(c);
+  }
+  function moveHandToBench(id) {
+    var p = cur();
+    if (p.bench.length >= CONFIG.BENCH_SIZE) throw new Error('ベンチはこれ以上補充できません');
+    var c = findAndRemove(p.hand, id);
+    if (!c) throw new Error('手札にありません');
+    p.bench.push(c);
+  }
+  function endMainPhase() { game.phase = 'BATTLE'; }
+
+  function cardInPlay(p, id) {
+    var c = findIn(p.bench, id);
+    if (c) return { card: c, zone: 'BENCH' };
+    c = findIn(p.field, id);
+    if (c) return { card: c, zone: 'FIELD' };
+    return null;
+  }
+
+  function declareAttack(attackerFieldCardId, defenderTargetCardId, attackerComboIds, defenderComboIds) {
+    if (game.phase !== 'BATTLE') throw new Error('バトルフェイズではありません');
+    if (game.attacksUsedThisTurn >= CONFIG.MAX_ATTACKS_PER_TURN) throw new Error('攻撃回数上限');
+    if (game.attackedFieldCardIdsThisTurn[attackerFieldCardId]) throw new Error('このカードは今ターン攻撃済みです');
+
+    var attacker = cur(), defender = opp();
+    var attackerCard = findIn(attacker.field, attackerFieldCardId);
+    if (!attackerCard) throw new Error('場にありません');
+    var targetInfo = cardInPlay(defender, defenderTargetCardId);
+    if (!targetInfo) throw new Error('相手のベンチ/場にありません');
+    var defenderCard = targetInfo.card, defenderZone = targetInfo.zone;
+
+    var attackerComboCards = (attackerComboIds || []).map(function (id) {
+      var c = findIn(attacker.hand, id);
+      if (!c) throw new Error('手札にありません');
+      return c;
+    });
+    var defenderComboCards = (defenderComboIds || []).map(function (id) {
+      var c = findIn(defender.hand, id);
+      if (!c) throw new Error('手札にありません');
+      return c;
+    });
+
+    var attrAdvantage = hasAttributeAdvantage(attackerCard.attribute, defenderCard.attribute);
+    var attrBonus = attrAdvantage ? CONFIG.ATTRIBUTE_ADVANTAGE_BONUS : 0;
+    var attackTotal = attackerCard.attack + attrBonus + attackerComboCards.reduce(function (s, c) { return s + c.combo; }, 0);
+    var defenseTotal = defenderCard.defense + defenderComboCards.reduce(function (s, c) { return s + c.combo; }, 0);
+    var attackSucceeded = attackTotal > defenseTotal;
+
+    attackerComboCards.forEach(function (c) { findAndRemove(attacker.hand, c.id); attacker.discard.push(c); });
+    defenderComboCards.forEach(function (c) { findAndRemove(defender.hand, c.id); defender.discard.push(c); });
+
+    findAndRemove(attacker.field, attackerCard.id);
+    attacker.discard.push(attackerCard);
+
+    var lifeCardMoved = null;
+    if (attackSucceeded) {
+      if (defenderZone === 'BENCH') findAndRemove(defender.bench, defenderCard.id);
+      else findAndRemove(defender.field, defenderCard.id);
+      defender.discard.push(defenderCard);
+      if (defender.life.length > 0) {
+        lifeCardMoved = defender.life.pop();
+        defender.hand.push(lifeCardMoved);
+      }
+      defender.cardsDestroyedByOpponent += 1;
+    }
+
+    game.attackedFieldCardIdsThisTurn[attackerFieldCardId] = true;
+    game.attacksUsedThisTurn += 1;
+
+    log(playerLabel(game.currentPlayer) + ': ' + attackerCard.id + '(' + attackTotal + ') vs ' + defenderCard.id + '(' + defenseTotal + ') -> ' + (attackSucceeded ? '論破成功' : 'ブロック成功'));
+
+    var result = {
+      attackerCard: attackerCard, defenderCard: defenderCard, defenderZone: defenderZone,
+      attributeAdvantage: attrAdvantage, attackerComboCards: attackerComboCards, defenderComboCards: defenderComboCards,
+      attackTotal: attackTotal, defenseTotal: defenseTotal, attackSucceeded: attackSucceeded, lifeCardMoved: lifeCardMoved,
+    };
+    checkWinner();
+    return result;
+  }
+
+  function checkWinner() {
+    ['P1', 'P2'].forEach(function (pid) {
+      if (game.players[pid].life.length === 0) {
+        game.winner = opponentOf(pid);
+        game.phase = 'GAME_OVER';
+        log(playerLabel(game.winner) + ' の勝利！');
+      }
+    });
+  }
+
+  function endTurn() {
+    game.attacksUsedThisTurn = 0;
+    game.attackedFieldCardIdsThisTurn = {};
+    game.currentPlayer = opponentOf(game.currentPlayer);
+    game.turnNumber += 1;
+    game.phase = 'BENCH_RECOVERY';
+  }
+
+  // ============================================================
+  // UI helpers
+  // ============================================================
+  function esc(s) {
+    return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+  }
+  function playerLabel(pid) { return pid === 'P1' ? 'プレイヤー1' : 'プレイヤー2'; }
+
+  var ui = { screen: 'title', benchSel: [], battle: null, benchSelPlayer: null };
+
+  function cardHtml(c, opts) {
+    opts = opts || {};
+    var cls = 'card';
+    if (opts.selectable) cls += ' selectable';
+    if (opts.selected) cls += ' selected';
+    if (opts.dim) cls += ' dim';
+    var statHtml = '';
+    if (opts.mode === 'attack') {
+      statHtml =
+        '<div class="stat-row">' +
+        '<div class="stat hi"><span>攻撃</span><span class="num">' + c.attack + '</span></div>' +
+        '<div class="stat"><span>コンボ</span><span class="num">' + c.combo + '</span></div>' +
+        '</div>';
+    } else if (opts.mode === 'defense') {
+      statHtml =
+        '<div class="stat-row">' +
+        '<div class="stat hi"><span>防御</span><span class="num">' + c.defense + '</span></div>' +
+        '<div class="stat"><span>コンボ</span><span class="num">' + c.combo + '</span></div>' +
+        '</div>';
+    } else {
+      statHtml =
+        '<div class="stat-row">' +
+        '<div class="stat"><span>攻</span><span class="num">' + c.attack + '</span></div>' +
+        '<div class="stat"><span>防</span><span class="num">' + c.defense + '</span></div>' +
+        '<div class="stat"><span>combo</span><span class="num">' + c.combo + '</span></div>' +
+        '</div>';
+    }
+    var text = opts.showExcuse ? c.excuseText : c.attackText;
+    return (
+      '<div class="' + cls + '" data-action="' + (opts.action || '') + '" data-id="' + esc(c.id) + '">' +
+      '<div class="card-id">' + esc(c.id) + '</div>' +
+      '<div class="card-top">' +
+      '<span class="attr-tab ' + ATTR_CLASS[c.attribute] + '">' + c.attribute + '</span>' +
+      '<span class="role-tag">' + esc(c.role.replace('型','')) + '</span>' +
+      '</div>' +
+      '<div class="card-theme">' + esc(c.theme) + '</div>' +
+      '<div class="card-text">「' + esc(text) + '」</div>' +
+      statHtml +
+      '</div>'
+    );
+  }
+
+  function lifePips(pid, n) {
+    var html = '<div class="life-pips">';
+    for (var i = 0; i < CONFIG.LIFE_COUNT; i++) {
+      html += '<span class="pip ' + (i < n ? 'on ' + pid.toLowerCase() : 'off') + '"></span>';
+    }
+    return html + '</div>';
+  }
+
+  function stepperHtml(phase) {
+    var steps = [
+      ['BENCH_RECOVERY', '回復'], ['DRAW', 'ドロー'], ['MAIN', 'メイン'], ['BATTLE', 'バトル'],
+    ];
+    return '<div class="stepper">' + steps.map(function (s) {
+      return '<div class="step' + (s[0] === phase ? ' active' : '') + '">' + s[1] + '</div>';
+    }).join('') + '</div>';
+  }
+
+  function render() {
+    var app = document.getElementById('app');
+    app.innerHTML = renderScreen();
+  }
+
+  function renderScreen() {
+    if (ui.screen === 'title') return renderTitle();
+    if (ui.screen === 'pass') return renderPass();
+    if (ui.screen === 'benchSelect') return renderBenchSelect();
+    if (ui.screen === 'turn') return renderTurn();
+    if (ui.screen === 'gameover') return renderGameOver();
+    return '';
+  }
+
+  function renderTitle() {
+    return (
+      '<div class="title-screen">' +
+      '<div class="logo">正論<span class="punch">パンチ</span>（仮）</div>' +
+      '<div class="tagline">日常の小言バトル。5つのテーマ40枚のカードで、相手を正論で追い詰めろ。2人で1台のスマホを交互に渡して遊ぶローカル対戦です。</div>' +
+      '<button class="btn btn-accent" data-action="start" style="font-size:1.1rem;padding:0.8em 1.6em;">たいせん開始</button>' +
+      '<div class="rules-box">' +
+      '<b>ルール要約</b><br>' +
+      '・共通山札40枚 / ライフ4枚（裏向き）を奪い合う2人対戦。<br>' +
+      '・攻撃力 &gt; 防御力なら「論破成功」→ 相手はライフを1枚失い（自分の手札に加わる）、双方の使用カードは捨て札。<br>' +
+      '・防御力 ≧ 攻撃力なら「ブロック成功」→ 防御側カードは場に残る。<br>' +
+      '・属性は 赤&gt;青&gt;緑&gt;赤 の三すくみ。攻撃側が有利な属性なら攻撃力+1000（防御側にボーナスなし）。<br>' +
+      '・手札から最大3枚を捨てて「コンボ」値を上乗せできる（攻守どちらも）。<br>' +
+      '・1ターンに出せる場のカードは最大3枚、攻撃も1ターン最大3回（1枚1回まで）。' +
+      '</div>' +
+      '</div>'
+    );
+  }
+
+  function renderPass() {
+    var pid = ui.pass.pid;
+    return (
+      '<div class="pass-screen">' +
+      '<div class="pass-card">' +
+      '<div class="pass-badge ' + pid.toLowerCase() + '">' + playerLabel(pid) + '</div>' +
+      '<div class="pass-msg">' + esc(ui.pass.message) + '</div>' +
+      '<button class="btn btn-accent btn-block" data-action="passReveal">タップして画面を見る</button>' +
+      '</div>' +
+      '<div class="pass-warn">' + (pid === 'P1' ? playerLabel('P2') : playerLabel('P1')) + ' は画面を見ないでください</div>' +
+      '</div>'
+    );
+  }
+
+  function goPass(pid, message, next) {
+    ui.screen = 'pass';
+    ui.pass = { pid: pid, message: message, next: next };
+  }
+
+  function renderBenchSelect() {
+    var pid = ui.benchSelPlayer;
+    var p = game.players[pid];
+    var need = CONFIG.BENCH_SIZE - ui.benchSel.length;
+    return (
+      '<div class="panel">' +
+      '<div class="panel-header">' +
+      '<h2>' + playerLabel(pid) + ': ベンチに置くカードを3枚選択</h2>' +
+      '<div class="panel-sub">手札からベンチへ裏側の控えを作ります。あと' + Math.max(need, 0) + '枚選んでください。</div>' +
+      '</div>' +
+      '<div class="panel-body">' +
+      '<div class="grid-cards">' +
+      p.hand.map(function (c) {
+        return cardHtml(c, { selectable: true, selected: ui.benchSel.indexOf(c.id) >= 0, action: 'toggleBench' });
+      }).join('') +
+      '</div>' +
+      '</div>' +
+      '<div class="actionbar">' +
+      '<button class="btn btn-accent btn-block" data-action="confirmBench"' + (ui.benchSel.length === CONFIG.BENCH_SIZE ? '' : ' disabled') + '>ベンチを確定 (' + ui.benchSel.length + '/' + CONFIG.BENCH_SIZE + ')</button>' +
+      '</div>' +
+      '</div>'
+    );
+  }
+
+  function renderTurn() {
+    var pid = game.currentPlayer;
+    var oid = opponentOf(pid);
+    var p = game.players[pid], o = game.players[oid];
+
+    if (ui.battle) return renderBattle();
+
+    var noticeParts = [];
+    if (game.lastRecoveryDraw > 0) noticeParts.push('ベンチ回復 +' + game.lastRecoveryDraw + '枚');
+    if (game.lastNormalDraw > 0) noticeParts.push('ドロー +' + game.lastNormalDraw + '枚');
+
+    var body = '';
+    body += '<div class="zone-block opp">';
+    body += '<div class="zone-title"><span>相手の場（' + playerLabel(oid) + '）</span><span>手札 ' + o.hand.length + '枚</span></div>';
+    body += '<div class="cardrow' + (o.field.length ? '' : ' empty') + '">' + o.field.map(function (c) { return cardHtml(c); }).join('') + '</div>';
+    body += '<div class="zone-title" style="margin-top:0.5rem;">相手のベンチ</div>';
+    body += '<div class="cardrow' + (o.bench.length ? '' : ' empty') + '">' + o.bench.map(function (c) { return cardHtml(c); }).join('') + '</div>';
+    body += '</div>';
+
+    body += '<div class="zone-block self">';
+    body += '<div class="zone-title"><span>自分の場</span><span>山札 ' + game.deck.length + '枚 / 捨札 ' + (p.discard.length + o.discard.length) + '枚</span></div>';
+    body += '<div class="cardrow' + (p.field.length ? '' : ' empty') + '">' + p.field.map(function (c) {
+      return cardHtml(c, { mode: 'attack' }).replace('<div class="card', '<div data-fieldcard="' + c.id + '" class="card');
+    }).join('') + '</div>';
+
+    if (game.phase === 'MAIN') {
+      body += '<div class="zone-title" style="margin-top:0.5rem;">ベンチ (' + p.bench.length + '/' + CONFIG.BENCH_SIZE + ')</div>';
+      body += '<div class="cardrow' + (p.bench.length ? '' : ' empty') + '">' + p.bench.map(function (c) {
+        return cardHtml(c, { selectable: true, action: 'benchToField', mode: 'attack' });
+      }).join('') + '</div>';
+      body += '<div class="notice">ベンチのカードをタップで場へ。手札のカードをタップでベンチへ補充。</div>';
+      body += '<div class="zone-title" style="margin-top:0.5rem;">手札 (' + p.hand.length + '枚)</div>';
+      body += '<div class="cardrow">' + p.hand.map(function (c) {
+        return cardHtml(c, { selectable: p.bench.length < CONFIG.BENCH_SIZE, action: 'handToBench' });
+      }).join('') + '</div>';
+    } else if (game.phase === 'BATTLE') {
+      body += '<div class="zone-title" style="margin-top:0.5rem;">ベンチ</div>';
+      body += '<div class="cardrow' + (p.bench.length ? '' : ' empty') + '">' + p.bench.map(function (c) { return cardHtml(c); }).join('') + '</div>';
+      body += '<div class="notice">場のカードをタップして攻撃を宣言（このターン未使用のカードのみ）。</div>';
+      body += '<div class="zone-title" style="margin-top:0.5rem;">手札 (' + p.hand.length + '枚・非公開)</div>';
+      body += '<div class="cardrow">' + p.hand.map(function (c) { return cardHtml(c); }).join('') + '</div>';
+    }
+
+    body += '<div class="log-box">' + game.log.slice(-6).map(function (l) { return esc(l); }).join('<br>') + '</div>';
+    body += '</div>';
+
+    var actionbar = '';
+    if (game.phase === 'MAIN') {
+      actionbar = '<div class="actionbar"><button class="btn btn-accent btn-block" data-action="toBattle">バトルフェイズへ →</button></div>';
+    } else if (game.phase === 'BATTLE') {
+      var usedUp = game.attacksUsedThisTurn >= CONFIG.MAX_ATTACKS_PER_TURN;
+      actionbar =
+        '<div class="actionbar">' +
+        '<button class="btn btn-block" data-action="endTurn">' + (usedUp ? '手番を終了 →' : 'こうげきを終了して手番へ →') + '</button>' +
+        '</div>';
+    }
+
+    return (
+      '<div class="statusbar">' +
+      '<div class="status-row">' +
+      '<span class="who ' + pid.toLowerCase() + '">' + playerLabel(pid) + ' のターン (' + game.turnNumber + ')</span>' +
+      '</div>' +
+      '<div class="status-row" style="margin-top:0.3rem;">' +
+      '<span>' + lifePips('P1', game.players.P1.life.length) + '</span>' +
+      '<span style="font-size:0.68rem;color:var(--ink-soft);">' + playerLabel('P1') + ' vs ' + playerLabel('P2') + '</span>' +
+      '<span>' + lifePips('P2', game.players.P2.life.length) + '</span>' +
+      '</div>' +
+      stepperHtml(game.phase) +
+      (noticeParts.length ? '<div class="notice">' + noticeParts.join(' / ') + '</div>' : '') +
+      '</div>' +
+      '<div class="board">' + body + '</div>' +
+      actionbar
+    );
+  }
+
+  function renderBattle() {
+    var b = ui.battle;
+    var pid = game.currentPlayer, oid = opponentOf(pid);
+    var attacker = game.players[pid], defender = game.players[oid];
+
+    if (b.step === 'pickTarget') {
+      var targets = defender.bench.concat(defender.field);
+      return (
+        '<div class="panel">' +
+        '<div class="panel-header"><h2>攻撃対象を選択</h2><div class="panel-sub">攻撃カード: ' + esc(b.attackerCard.id) + '「' + esc(b.attackerCard.attackText) + '」</div></div>' +
+        '<div class="panel-body"><div class="grid-cards">' +
+        targets.map(function (c) { return cardHtml(c, { selectable: true, action: 'pickTarget', mode: 'defense' }); }).join('') +
+        '</div></div>' +
+        '<div class="actionbar"><button class="btn btn-ghost btn-block" data-action="cancelBattle">キャンセル</button></div>' +
+        '</div>'
+      );
+    }
+
+    if (b.step === 'attackerCombo') {
+      var advantage = hasAttributeAdvantage(b.attackerCard.attribute, b.targetCard.attribute);
+      var comboSum = b.atkCombo.reduce(function (s, id) { var c = findIn(attacker.hand, id); return s + (c ? c.combo : 0); }, 0);
+      var total = b.attackerCard.attack + (advantage ? CONFIG.ATTRIBUTE_ADVANTAGE_BONUS : 0) + comboSum;
+      return (
+        '<div class="panel">' +
+        '<div class="panel-header"><h2>' + playerLabel(pid) + ': コンボを追加（任意・最大3枚）</h2>' +
+        '<div class="panel-sub">対象: ' + esc(b.targetCard.id) + (advantage ? '（属性有利 +1000）' : '') + '</div></div>' +
+        '<div class="panel-body">' +
+        '<div class="total-banner">攻撃合計: ' + total + '</div>' +
+        '<div class="badge-row">' +
+        '<span class="badge">基礎 ' + b.attackerCard.attack + '</span>' +
+        (advantage ? '<span class="badge">属性有利 +' + CONFIG.ATTRIBUTE_ADVANTAGE_BONUS + '</span>' : '') +
+        (comboSum ? '<span class="badge">コンボ +' + comboSum + '</span>' : '') +
+        '</div>' +
+        '<div class="grid-cards">' +
+        attacker.hand.map(function (c) {
+          var sel = b.atkCombo.indexOf(c.id) >= 0;
+          var dim = !sel && b.atkCombo.length >= CONFIG.COMBO_MAX_CARDS_FROM_HAND;
+          return cardHtml(c, { selectable: !dim, selected: sel, dim: dim, action: 'toggleAtkCombo', mode: 'attack' });
+        }).join('') +
+        '</div>' +
+        '</div>' +
+        '<div class="actionbar">' +
+        '<button class="btn btn-ghost" data-action="cancelBattle">キャンセル</button>' +
+        '<button class="btn btn-accent btn-block" data-action="confirmAttackerCombo">攻撃を宣言 →</button>' +
+        '</div>' +
+        '</div>'
+      );
+    }
+
+    if (b.step === 'passDefender') {
+      return (
+        '<div class="pass-screen">' +
+        '<div class="pass-card">' +
+        '<div class="pass-badge ' + oid.toLowerCase() + '">' + playerLabel(oid) + '</div>' +
+        '<div class="pass-msg">' + playerLabel(pid) + ' が「' + esc(b.attackerCard.id) + '」で攻撃を宣言しました。防御を選んでください。</div>' +
+        '<button class="btn btn-accent btn-block" data-action="revealDefender">タップして画面を見る</button>' +
+        '</div>' +
+        '<div class="pass-warn">' + playerLabel(pid) + ' は画面を見ないでください</div>' +
+        '</div>'
+      );
+    }
+
+    if (b.step === 'defenderCombo') {
+      var advantage2 = hasAttributeAdvantage(b.attackerCard.attribute, b.targetCard.attribute);
+      var atkComboSum = b.atkCombo.reduce(function (s, id) {
+        var c = b.atkComboCardsSnapshot ? b.atkComboCardsSnapshot.find(function (x) { return x.id === id; }) : null;
+        return s + (c ? c.combo : 0);
+      }, 0);
+      var attackTotalPreview = b.attackerCard.attack + (advantage2 ? CONFIG.ATTRIBUTE_ADVANTAGE_BONUS : 0) + atkComboSum;
+      var defComboSum = b.defCombo.reduce(function (s, id) { var c = findIn(defender.hand, id); return s + (c ? c.combo : 0); }, 0);
+      var defTotal = b.targetCard.defense + defComboSum;
+      return (
+        '<div class="panel">' +
+        '<div class="panel-header"><h2>' + playerLabel(oid) + ': 防御コンボを追加（任意・最大3枚）</h2></div>' +
+        '<div class="panel-body">' +
+        '<div class="matchup">' +
+        cardHtml(b.attackerCard, { mode: 'attack' }) +
+        '<span class="vs">VS</span>' +
+        cardHtml(b.targetCard, { mode: 'defense' }) +
+        '</div>' +
+        '<div class="total-banner">攻撃 ' + attackTotalPreview + ' &nbsp;:&nbsp; 防御 ' + defTotal + '</div>' +
+        '<div class="grid-cards">' +
+        defender.hand.map(function (c) {
+          var sel = b.defCombo.indexOf(c.id) >= 0;
+          var dim = !sel && b.defCombo.length >= CONFIG.COMBO_MAX_CARDS_FROM_HAND;
+          return cardHtml(c, { selectable: !dim, selected: sel, dim: dim, action: 'toggleDefCombo', mode: 'defense' });
+        }).join('') +
+        '</div>' +
+        '</div>' +
+        '<div class="actionbar">' +
+        '<button class="btn btn-accent btn-block" data-action="confirmDefense">防御を確定 → 判定</button>' +
+        '</div>' +
+        '</div>'
+      );
+    }
+
+    if (b.step === 'result') {
+      var r = b.result;
+      return (
+        '<div class="panel">' +
+        '<div class="panel-header"><h2>バトル結果</h2></div>' +
+        '<div class="panel-body">' +
+        '<div class="matchup">' +
+        cardHtml(r.attackerCard, { mode: 'attack' }) +
+        '<span class="vs">VS</span>' +
+        cardHtml(r.defenderCard, { mode: 'defense' }) +
+        '</div>' +
+        '<div class="badge-row">' +
+        (r.attributeAdvantage ? '<span class="badge">属性有利 +1000</span>' : '') +
+        (r.attackerComboCards.length ? '<span class="badge">攻コンボ +' + r.attackerComboCards.reduce(function(s,c){return s+c.combo;},0) + '</span>' : '') +
+        (r.defenderComboCards.length ? '<span class="badge">防コンボ +' + r.defenderComboCards.reduce(function(s,c){return s+c.combo;},0) + '</span>' : '') +
+        '</div>' +
+        '<div class="total-banner">' + r.attackTotal + ' vs ' + r.defenseTotal + '</div>' +
+        '<div class="result-outcome ' + (r.attackSucceeded ? 'win' : 'block') + '">' +
+        (r.attackSucceeded ? '論破成功！' : 'ブロック成功') +
+        '</div>' +
+        '<div class="panel-sub" style="text-align:center;">' +
+        (r.attackSucceeded
+          ? playerLabel(oid) + ' はライフを1枚失いました（相手の手札に加わりました）'
+          : esc(r.defenderCard.id) + ' は場に残りました') +
+        '</div>' +
+        '</div>' +
+        '<div class="actionbar"><button class="btn btn-accent btn-block" data-action="ackResult">OK</button></div>' +
+        '</div>'
+      );
+    }
+
+    if (b.step === 'passBackToAttacker') {
+      return (
+        '<div class="pass-screen">' +
+        '<div class="pass-card">' +
+        '<div class="pass-badge ' + pid.toLowerCase() + '">' + playerLabel(pid) + '</div>' +
+        '<div class="pass-msg">結果を確認しました。画面を ' + playerLabel(pid) + ' に返してください。</div>' +
+        '<button class="btn btn-accent btn-block" data-action="backToAttacker">タップして画面を見る</button>' +
+        '</div>' +
+        '<div class="pass-warn">' + playerLabel(oid) + ' は画面を見ないでください</div>' +
+        '</div>'
+      );
+    }
+
+    return '';
+  }
+
+  function renderGameOver() {
+    return (
+      '<div class="gameover-screen">' +
+      '<div class="win-title display">🏆 ' + playerLabel(game.winner) + ' の勝利！</div>' +
+      '<div class="panel-sub">' + playerLabel(opponentOf(game.winner)) + ' はライフを ' + CONFIG.LIFE_COUNT + ' 枚すべて失いました。</div>' +
+      '<button class="btn btn-accent" data-action="restart">もう一度あそぶ</button>' +
+      '</div>'
+    );
+  }
+
+  // ============================================================
+  // Actions
+  // ============================================================
+  function afterPassRevealDefault() {
+    var next = ui.pass.next;
+    next();
+    render();
+  }
+
+  function handleAction(action, id) {
+    if (action === 'start') {
+      setupNewGame('P1');
+      goPass('P1', 'ベンチに置くカードを選びます。', function () {
+        ui.screen = 'benchSelect';
+        ui.benchSelPlayer = 'P1';
+        ui.benchSel = [];
+      });
+      render();
+      return;
+    }
+    if (action === 'passReveal') { afterPassRevealDefault(); return; }
+
+    if (action === 'toggleBench') {
+      var i = ui.benchSel.indexOf(id);
+      if (i >= 0) ui.benchSel.splice(i, 1);
+      else if (ui.benchSel.length < CONFIG.BENCH_SIZE) ui.benchSel.push(id);
+      render();
+      return;
+    }
+    if (action === 'confirmBench') {
+      placeInitialBench(ui.benchSelPlayer, ui.benchSel);
+      if (ui.benchSelPlayer === 'P1') {
+        goPass('P2', 'ベンチに置くカードを選びます。', function () {
+          ui.screen = 'benchSelect';
+          ui.benchSelPlayer = 'P2';
+          ui.benchSel = [];
+        });
+      } else {
+        goPass(game.currentPlayer, 'あなたのターンです。', function () {
+          beginTurnBenchRecovery();
+          drawPhase();
+          ui.screen = 'turn';
+        });
+      }
+      render();
+      return;
+    }
+
+    if (action === 'benchToField') { moveBenchToField(id); render(); return; }
+    if (action === 'handToBench') { moveHandToBench(id); render(); return; }
+    if (action === 'toBattle') { endMainPhase(); render(); return; }
+
+    if (action === 'endTurn') {
+      endTurn();
+      if (game.phase === 'GAME_OVER') { ui.screen = 'gameover'; render(); return; }
+      goPass(game.currentPlayer, 'あなたのターンです。', function () {
+        beginTurnBenchRecovery();
+        drawPhase();
+        ui.screen = 'turn';
+      });
+      render();
+      return;
+    }
+
+    if (action === 'fieldAttackStart') {
+      var p = cur();
+      var c = findIn(p.field, id);
+      if (!c || game.attackedFieldCardIdsThisTurn[id] || game.attacksUsedThisTurn >= CONFIG.MAX_ATTACKS_PER_TURN) return;
+      ui.battle = { step: 'pickTarget', attackerCard: c, atkCombo: [], defCombo: [] };
+      render();
+      return;
+    }
+    if (action === 'cancelBattle') { ui.battle = null; render(); return; }
+
+    if (action === 'pickTarget') {
+      var o = opp();
+      var t = findIn(o.bench, id) || findIn(o.field, id);
+      if (!t) return;
+      ui.battle.targetCard = t;
+      ui.battle.step = 'attackerCombo';
+      render();
+      return;
+    }
+    if (action === 'toggleAtkCombo') {
+      var b = ui.battle;
+      var i2 = b.atkCombo.indexOf(id);
+      if (i2 >= 0) b.atkCombo.splice(i2, 1);
+      else if (b.atkCombo.length < CONFIG.COMBO_MAX_CARDS_FROM_HAND) b.atkCombo.push(id);
+      render();
+      return;
+    }
+    if (action === 'confirmAttackerCombo') {
+      var b2 = ui.battle;
+      b2.atkComboCardsSnapshot = b2.atkCombo.map(function (cid) { return findIn(cur().hand, cid); });
+      b2.step = 'passDefender';
+      render();
+      return;
+    }
+    if (action === 'revealDefender') { ui.battle.step = 'defenderCombo'; render(); return; }
+    if (action === 'toggleDefCombo') {
+      var b3 = ui.battle;
+      var i3 = b3.defCombo.indexOf(id);
+      if (i3 >= 0) b3.defCombo.splice(i3, 1);
+      else if (b3.defCombo.length < CONFIG.COMBO_MAX_CARDS_FROM_HAND) b3.defCombo.push(id);
+      render();
+      return;
+    }
+    if (action === 'confirmDefense') {
+      var b4 = ui.battle;
+      var result = declareAttack(b4.attackerCard.id, b4.targetCard.id, b4.atkCombo, b4.defCombo);
+      b4.result = result;
+      b4.step = 'result';
+      render();
+      return;
+    }
+    if (action === 'ackResult') {
+      if (game.phase === 'GAME_OVER') { ui.battle = null; ui.screen = 'gameover'; render(); return; }
+      ui.battle.step = 'passBackToAttacker';
+      render();
+      return;
+    }
+    if (action === 'backToAttacker') { ui.battle = null; render(); return; }
+
+    if (action === 'restart') {
+      ui.screen = 'title';
+      ui.battle = null;
+      game = null;
+      render();
+      return;
+    }
+  }
+
+  document.getElementById('app').addEventListener('click', function (ev) {
+    try {
+      // Field cards in the BATTLE phase start an attack when tapped directly.
+      var fieldEl = ev.target.closest('[data-fieldcard]');
+      if (fieldEl && game && game.phase === 'BATTLE' && !ui.battle) {
+        handleAction('fieldAttackStart', fieldEl.getAttribute('data-fieldcard'));
+        return;
+      }
+      var el = ev.target.closest('[data-action]');
+      if (!el) return;
+      var action = el.getAttribute('data-action');
+      if (!action) return;
+      handleAction(action, el.getAttribute('data-id'));
+    } catch (e) {
+      alert(e.message || String(e));
+    }
+  });
+
+  // Theme toggle: cycles system -> light -> dark -> system
+  var themeBtn = document.getElementById('themeToggle');
+  function applyTheme(t) {
+    if (t) document.documentElement.setAttribute('data-theme', t);
+    else document.documentElement.removeAttribute('data-theme');
+  }
+  (function initTheme() {
+    var saved = null;
+    try { saved = localStorage.getItem('logicpunch-theme'); } catch (e) {}
+    applyTheme(saved);
+  })();
+  themeBtn.addEventListener('click', function () {
+    var cur = null;
+    try { cur = localStorage.getItem('logicpunch-theme'); } catch (e) {}
+    var next = cur === null ? 'light' : (cur === 'light' ? 'dark' : null);
+    applyTheme(next);
+    try {
+      if (next === null) localStorage.removeItem('logicpunch-theme');
+      else localStorage.setItem('logicpunch-theme', next);
+    } catch (e) {}
+  });
+
+  render();
+})();
+</script>
